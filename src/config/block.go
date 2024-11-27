@@ -29,6 +29,7 @@ type Block struct {
 	Type            BlockType      `json:"type,omitempty" toml:"type,omitempty"`
 	Alignment       BlockAlignment `json:"alignment,omitempty" toml:"alignment,omitempty"`
 	Filler          string         `json:"filler,omitempty" toml:"filler,omitempty"`
+	FillerTemplate  string         `json:"filler_template,omitempty" toml:"filler_template,omitempty"`
 	Overflow        Overflow       `json:"overflow,omitempty" toml:"overflow,omitempty"`
 	LeadingDiamond  string         `json:"leading_diamond,omitempty" toml:"leading_diamond,omitempty"`
 	TrailingDiamond string         `json:"trailing_diamond,omitempty" toml:"trailing_diamond,omitempty"`

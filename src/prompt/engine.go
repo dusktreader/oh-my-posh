@@ -15,15 +15,21 @@ import (
 var cycle *color.Cycle = &color.Cycle{}
 
 type Engine struct {
-	Env                   runtime.Environment
-	Config                *config.Config
-	activeSegment         *config.Segment
-	previousActiveSegment *config.Segment
-	rprompt               string
-	prompt                strings.Builder
-	currentLineLength     int
-	rpromptLength         int
-	Plain                 bool
+	Env                    runtime.Environment
+	Config                 *config.Config
+	activeSegment          *config.Segment
+	previousActiveSegment  *config.Segment
+	rprompt                string
+	prompt                 strings.Builder
+	currentLineLength      int
+	rpromptLength          int
+	Plain                  bool
+	hasOverflow            bool
+}
+
+type FillerContext struct {
+	Overflow config.Overflow
+	Padding  int
 }
 
 const (
@@ -152,12 +158,20 @@ func (e *Engine) isIterm() bool {
 	return terminal.Program == terminal.ITerm
 }
 
-func (e *Engine) shouldFill(filler string, padLength int) (string, bool) {
-	if len(filler) == 0 {
+func (e *Engine) shouldFill(block *config.Block, padLength int) (string, bool) {
+	if padLength <= 0 {
 		return "", false
 	}
 
-	if padLength <= 0 {
+	if block.FillerTemplate != "" {
+		return e.shouldFillTemplate(block, padLength)
+	} else {
+		return e.shouldFillNormal(block.Filler, padLength)
+	}
+}
+
+func (e *Engine) shouldFillNormal(filler string, padLength int) (string, bool) {
+	if len(filler) == 0 {
 		return "", false
 	}
 
@@ -173,6 +187,22 @@ func (e *Engine) shouldFill(filler string, padLength int) (string, bool) {
 	unfilled := padLength % lenFiller
 	text := strings.Repeat(filler, repeat) + strings.Repeat(" ", unfilled)
 	return text, true
+}
+
+func (e *Engine) shouldFillTemplate(block *config.Block, padLength int) (string, bool) {
+	ctx := FillerContext{Padding: padLength}
+	if e.hasOverflow {
+		ctx.Overflow = block.Overflow
+	}
+
+	tmpl := &template.Text{
+		Template: block.FillerTemplate,
+		Context: ctx,
+	}
+	if text, err := tmpl.Render(); err == nil {
+		return e.shouldFillNormal(text, padLength)
+	}
+	return "", false
 }
 
 func (e *Engine) getTitleTemplateText() string {
@@ -218,12 +248,13 @@ func (e *Engine) renderBlock(block *config.Block, cancelNewline bool) bool {
 
 		// we can't print the right block as there's not enough room available
 		if !OK {
+			e.hasOverflow = true
 			switch block.Overflow {
 			case config.Break:
 				e.writeNewline()
 			case config.Hide:
 				// make sure to fill if needed
-				if padText, OK := e.shouldFill(block.Filler, space+length); OK {
+				if padText, OK := e.shouldFill(block, space+length); OK {
 					e.write(padText)
 				}
 
@@ -234,10 +265,11 @@ func (e *Engine) renderBlock(block *config.Block, cancelNewline bool) bool {
 
 		defer func() {
 			e.currentLineLength = 0
+			e.hasOverflow = false
 		}()
 
 		// validate if we have a filler and fill if needed
-		if padText, OK := e.shouldFill(block.Filler, space); OK {
+		if padText, OK := e.shouldFill(block, space); OK {
 			e.write(padText)
 			e.write(text)
 			return true

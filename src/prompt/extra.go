@@ -85,7 +85,7 @@ func (e *Engine) ExtraPrompt(promptType ExtraPromptType) string {
 	if promptType == Transient && len(prompt.Filler) != 0 {
 		consoleWidth, err := e.Env.TerminalWidth()
 		if err == nil || consoleWidth != 0 {
-			if padText, OK := e.shouldFill(prompt.Filler, consoleWidth-length); OK {
+			if padText, OK := e.shouldFillNormal(prompt.Filler, consoleWidth-length); OK {
 				str += padText
 			}
 		}

@@ -276,3 +276,32 @@ func TestGetConsoleTitleIfGethostnameReturnsError(t *testing.T) {
 		assert.Equal(t, tc.Expected, got)
 	}
 }
+
+func TestShouldFillTemplate(t *testing.T) {
+	cases := []struct {
+		Block        config.Block
+		HasOverlow   bool
+		Padding      int
+		ExpectedText string
+		ExpectedBool bool
+	}{
+		{
+			HasOverlow:   false,
+			Padding:      20,
+			ExpectedText: "--------------------",
+			Block: config.Block{
+				Overflow: config.Hide,
+				FillerTemplate: "-",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		env := new(mock.Environment)
+		terminal.Init(shell.GENERIC)
+		engine := &Engine{Env: env}
+		gotText, gotBool := engine.shouldFillTemplate(&tc.Block, tc.Padding)
+		assert.Equal(t, gotText, tc.ExpectedText)
+		assert.Equal(t, gotBool, tc.ExpectedBool)
+	}
+}
