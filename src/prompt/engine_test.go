@@ -2,9 +2,11 @@ package prompt
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/jandedobbeleer/oh-my-posh/src/cache"
+	"github.com/jandedobbeleer/oh-my-posh/src/color"
 	"github.com/jandedobbeleer/oh-my-posh/src/config"
 	"github.com/jandedobbeleer/oh-my-posh/src/maps"
 	"github.com/jandedobbeleer/oh-my-posh/src/runtime"
@@ -278,20 +280,93 @@ func TestGetConsoleTitleIfGethostnameReturnsError(t *testing.T) {
 }
 
 func TestShouldFillTemplate(t *testing.T) {
+
+	terminalMangle := func(text string) string {
+		const ESC = "\x1b"
+		const DEFAULT_BG = "[49m"
+		const DEFAULT_FG = "[39m"
+		const RESET = "[0m"
+		return ESC + DEFAULT_BG + ESC + DEFAULT_FG + text + ESC + RESET
+	}
+
+	terminal.Colors = &color.Defaults{}
 	cases := []struct {
-		Block        config.Block
-		HasOverlow   bool
+		Case         string
+		HasOverflow  bool
 		Padding      int
 		ExpectedText string
 		ExpectedBool bool
+		Block        config.Block
 	}{
 		{
-			HasOverlow:   false,
-			Padding:      20,
-			ExpectedText: "--------------------",
+			Case:         "Plain single character with no padding",
+			HasOverflow:  false,
+			Padding:      0,
+			ExpectedText: "",
+			ExpectedBool: true,
 			Block: config.Block{
 				Overflow: config.Hide,
 				FillerTemplate: "-",
+			},
+		}, {
+			Case:         "Plain single character with 1 padding",
+			HasOverflow:  false,
+			Padding:      1,
+			ExpectedText: terminalMangle("-"),
+			ExpectedBool: true,
+			Block: config.Block{
+				Overflow: config.Hide,
+				FillerTemplate: "-",
+			},
+		}, {
+			Case:         "Plain single character with lots of padding",
+			HasOverflow:  false,
+			Padding:      200,
+			ExpectedText: strings.Repeat(terminalMangle("-"), 200),
+			ExpectedBool: true,
+			Block: config.Block{
+				Overflow: config.Hide,
+				FillerTemplate: "-",
+			},
+		}, {
+			Case:         "Plain multi-character with some padding",
+			HasOverflow:  false,
+			Padding:      20,
+			ExpectedText: strings.Repeat(terminalMangle("-^-"), 6) + "  ",
+			ExpectedBool: true,
+			Block: config.Block{
+				Overflow: config.Hide,
+				FillerTemplate: "-^-",
+			},
+		}, {
+			Case:         "Template conditional on overflow with no overflow",
+			HasOverflow:  false,
+			Padding:      3,
+			ExpectedText: strings.Repeat(terminalMangle("X"), 3),
+			ExpectedBool: true,
+			Block: config.Block{
+				Overflow: config.Hide,
+				FillerTemplate: "{{ if .Overflow -}} O {{- else -}} X {{- end }}",
+			},
+		}, {
+			Case:         "Template conditional on overflow with an overflow",
+			HasOverflow:  true,
+			Padding:      3,
+			ExpectedText: strings.Repeat(terminalMangle("O"), 3),
+			ExpectedBool: true,
+			Block: config.Block{
+				Overflow: config.Hide,
+				FillerTemplate: "{{ if .Overflow -}} O {{- else -}} X {{- end }}",
+			},
+		}, {
+			Case:         "Template conditional on overflow break",
+			HasOverflow:  true,
+			Padding:      3,
+			ExpectedText: strings.Repeat(terminalMangle("O"), 3),
+			ExpectedBool: true,
+			Block: config.Block{
+				Overflow: config.Break,
+				FillerTemplate: `{{ if eq .Overflow "break" -}} O {{- else -}} X {{- end }}`,
 			},
 		},
 	}
@@ -299,9 +374,12 @@ func TestShouldFillTemplate(t *testing.T) {
 	for _, tc := range cases {
 		env := new(mock.Environment)
 		terminal.Init(shell.GENERIC)
-		engine := &Engine{Env: env}
+		engine := &Engine{
+			Env: env,
+			hasOverflow: tc.HasOverflow,
+		}
 		gotText, gotBool := engine.shouldFillTemplate(&tc.Block, tc.Padding)
-		assert.Equal(t, gotText, tc.ExpectedText)
-		assert.Equal(t, gotBool, tc.ExpectedBool)
+		assert.Equal(t, tc.ExpectedText, gotText)
+		assert.Equal(t, tc.ExpectedBool, gotBool)
 	}
 }

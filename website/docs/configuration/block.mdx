@@ -28,6 +28,7 @@ import Config from "@site/src/components/Config.js";
 | `newline`          | `boolean` |
 | `alignment`        | `string`  |
 | `filler`           | `string`  |
+| `filler_template`  | `string`  |
 | `overflow`         | `string`  |
 | `leading_diamond`  | `string`  |
 | `trailing_diamond` | `string`  |
@@ -67,6 +68,30 @@ to be repeated to this property. Add this property to the _right_ aligned block.
     block: {
       alignment: "right",
       filler: ".",
+    },
+  }}
+/>
+
+### Filler Template
+
+Filler Template fills the same role as Filler, but allows you to specify a template to tweak the text used
+as filler. This template behaves the same as Segment templates, however, fewer properties are available.
+Properties available for the Filler Template are:
+
+| Name        | Type   | Description
+| ----------- | ------ | ------------------------------------------------------------------
+| `.Overflow` | `text` | if no overflow was needed, this is "". Otherwise "hide" or "break"
+| `.Padding`  | `int`  | the computed length of the padding between left and right blocks
+
+This can be very useful if you wish to use a filler text when there is no overflow and use
+empty space when the right block is hidden or drawn on a newline due to overflow.
+
+<Config
+  data={{
+    block: {
+      alignment: "right",
+      overflow: "hide",
+      filler_template: "{{ if .Overflow }} {{ else }}-{{ end }}",
     },
   }}
 />
