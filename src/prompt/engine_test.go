@@ -280,13 +280,12 @@ func TestGetConsoleTitleIfGethostnameReturnsError(t *testing.T) {
 }
 
 func TestShouldFillTemplate(t *testing.T) {
-
 	terminalMangle := func(text string) string {
-		const ESC = "\x1b"
-		const DEFAULT_BG = "[49m"
-		const DEFAULT_FG = "[39m"
-		const RESET = "[0m"
-		return ESC + DEFAULT_BG + ESC + DEFAULT_FG + text + ESC + RESET
+		const esc = "\x1b"
+		const defaultBG = "[49m"
+		const defaultFG = "[39m"
+		const reset = "[0m"
+		return esc + defaultBG + esc + defaultFG + text + esc + reset
 	}
 
 	terminal.Colors = &color.Defaults{}
@@ -305,7 +304,7 @@ func TestShouldFillTemplate(t *testing.T) {
 			ExpectedText: "",
 			ExpectedBool: true,
 			Block: config.Block{
-				Overflow: config.Hide,
+				Overflow:       config.Hide,
 				FillerTemplate: "-",
 			},
 		}, {
@@ -315,7 +314,7 @@ func TestShouldFillTemplate(t *testing.T) {
 			ExpectedText: terminalMangle("-"),
 			ExpectedBool: true,
 			Block: config.Block{
-				Overflow: config.Hide,
+				Overflow:       config.Hide,
 				FillerTemplate: "-",
 			},
 		}, {
@@ -325,7 +324,7 @@ func TestShouldFillTemplate(t *testing.T) {
 			ExpectedText: strings.Repeat(terminalMangle("-"), 200),
 			ExpectedBool: true,
 			Block: config.Block{
-				Overflow: config.Hide,
+				Overflow:       config.Hide,
 				FillerTemplate: "-",
 			},
 		}, {
@@ -335,7 +334,7 @@ func TestShouldFillTemplate(t *testing.T) {
 			ExpectedText: strings.Repeat(terminalMangle("-^-"), 6) + "  ",
 			ExpectedBool: true,
 			Block: config.Block{
-				Overflow: config.Hide,
+				Overflow:       config.Hide,
 				FillerTemplate: "-^-",
 			},
 		}, {
@@ -345,7 +344,7 @@ func TestShouldFillTemplate(t *testing.T) {
 			ExpectedText: strings.Repeat(terminalMangle("X"), 3),
 			ExpectedBool: true,
 			Block: config.Block{
-				Overflow: config.Hide,
+				Overflow:       config.Hide,
 				FillerTemplate: "{{ if .Overflow -}} O {{- else -}} X {{- end }}",
 			},
 		}, {
@@ -355,7 +354,7 @@ func TestShouldFillTemplate(t *testing.T) {
 			ExpectedText: strings.Repeat(terminalMangle("O"), 3),
 			ExpectedBool: true,
 			Block: config.Block{
-				Overflow: config.Hide,
+				Overflow:       config.Hide,
 				FillerTemplate: "{{ if .Overflow -}} O {{- else -}} X {{- end }}",
 			},
 		}, {
@@ -365,7 +364,7 @@ func TestShouldFillTemplate(t *testing.T) {
 			ExpectedText: strings.Repeat(terminalMangle("O"), 3),
 			ExpectedBool: true,
 			Block: config.Block{
-				Overflow: config.Break,
+				Overflow:       config.Break,
 				FillerTemplate: `{{ if eq .Overflow "break" -}} O {{- else -}} X {{- end }}`,
 			},
 		},
@@ -375,7 +374,7 @@ func TestShouldFillTemplate(t *testing.T) {
 		env := new(mock.Environment)
 		terminal.Init(shell.GENERIC)
 		engine := &Engine{
-			Env: env,
+			Env:         env,
 			hasOverflow: tc.HasOverflow,
 		}
 		gotText, gotBool := engine.shouldFillTemplate(&tc.Block, tc.Padding)

@@ -15,16 +15,16 @@ import (
 var cycle *color.Cycle = &color.Cycle{}
 
 type Engine struct {
-	Env                    runtime.Environment
-	Config                 *config.Config
-	activeSegment          *config.Segment
-	previousActiveSegment  *config.Segment
-	rprompt                string
-	prompt                 strings.Builder
-	currentLineLength      int
-	rpromptLength          int
-	Plain                  bool
-	hasOverflow            bool
+	Env                   runtime.Environment
+	Config                *config.Config
+	activeSegment         *config.Segment
+	previousActiveSegment *config.Segment
+	rprompt               string
+	prompt                strings.Builder
+	currentLineLength     int
+	rpromptLength         int
+	Plain                 bool
+	hasOverflow           bool
 }
 
 type FillerContext struct {
@@ -165,9 +165,8 @@ func (e *Engine) shouldFill(block *config.Block, padLength int) (string, bool) {
 
 	if block.FillerTemplate != "" {
 		return e.shouldFillTemplate(block, padLength)
-	} else {
-		return e.shouldFillNormal(block.Filler, padLength)
 	}
+	return e.shouldFillNormal(block.Filler, padLength)
 }
 
 func (e *Engine) shouldFillNormal(filler string, padLength int) (string, bool) {
@@ -197,7 +196,7 @@ func (e *Engine) shouldFillTemplate(block *config.Block, padLength int) (string,
 
 	tmpl := &template.Text{
 		Template: block.FillerTemplate,
-		Context: ctx,
+		Context:  ctx,
 	}
 	if text, err := tmpl.Render(); err == nil {
 		return e.shouldFillNormal(text, padLength)
